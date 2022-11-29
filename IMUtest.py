@@ -384,7 +384,7 @@ while True:
     ##################### END Tilt Compensation ########################
 
 
-    levelFlag = False
+    levelFlag = False   #create boolean for whether or not IMU is upright or not
 
     if 1:                       #Change to '0' to stop showing the angles from the accelerometer
         outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
@@ -394,10 +394,10 @@ while True:
 
     if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
         outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
-        if (CFangleY <= -75) and (CFangleY >= -105):
-            levelFlag = True
+        if (CFangleY <= -75) and (CFangleY >= -105):         
+            levelFlag = True                        #set flag to True if IMU is upright
         else:
-            levelFlag = False
+            levelFlag = False                       #set flag to False if IMU is not upright 
 
 
     if 0:                       #Change to '0' to stop  showing the heading
@@ -406,7 +406,7 @@ while True:
     if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
         outputString +="# kalmanX %5.2f   kalmanY %5.2f #" % (kalmanX,kalmanY)
 
-    print(outputString + str(levelFlag))
+    print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
 
     #slow program down a bit, makes the output more readable
     time.sleep(0.01)
