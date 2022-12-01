@@ -31,13 +31,13 @@ class Emailer:
 sender = Emailer()
 
 sendTo = 'anotheremail@email.com'
-emailSubject = "Hello World"
-emailContent = "This is a test of my Emailer Class"
+emailSubject = "Daily Pills"
+emailContent = "Good morning! This is your daily reminder to take your pills for today."
 
 
-#while True:
+while True:
     
 
     #Sends an email to the "sendTo" address with the specified "emailSubject" as the subject and "emailContent" as the email content.
- #   sender.sendmail(sendTo, emailSubject, emailContent)
-   # time.sleep(20)
+    sender.sendmail(sendTo, emailSubject, emailContent)
+    time.sleep(20)
