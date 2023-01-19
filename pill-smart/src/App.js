@@ -9,21 +9,22 @@ import {
 } from "firebase/firestore"
 
 function App() {
-  const [recipes, setRecipes] = useState([])
+  const [pills, setPills] = useState([])
   const [form, setForm] = useState({
-    title: "",
-    desc: "",
-    ingredients: [],
-    steps: []
+    name: "",
+    quantity: 0,
+    unit: 0,
+    schedule: "",
+    emails: [],
   })
   const [popupActive, setPopupActive] = useState(false)
 
-  const recipesCollectionRef = collection(db, "recipes")
-  console.log(recipesCollectionRef)
+  const pillsCollectionRef = collection(db, "pills")
+  console.log(pillsCollectionRef)
 
   useEffect(() => {
-    onSnapshot(recipesCollectionRef, snapshot => {
-      setRecipes(snapshot.docs.map(doc => {
+    onSnapshot(pillsCollectionRef, snapshot => {
+      setPills(snapshot.docs.map(doc => {
         return {
           id: doc.id,
           viewing: false,
@@ -34,112 +35,97 @@ function App() {
   }, [])
 
   const handleView = id => {
-    const recipesClone = [...recipes]
+    const pillsClone = [...pills]
     
-    recipesClone.forEach(recipe => {
-      if (recipe.id == id) {
-        recipe.viewing = !recipe.viewing
+    pillsClone.forEach(pill => {
+      if (pill.id == id) {
+        pill.viewing = !pill.viewing
       } else {
-        recipe.viewing = false
+        pill.viewing = false
       }
     })
 
-    setRecipes(recipesClone)
+    setPills(pillsClone)
   }
 
   const handleSubmit = e => {
     e.preventDefault()
 
-    if (!form.title || !form.desc || !form.ingredients || !form.steps) {
-      alert("Please fill out all fields")
+    if (!form.name || !form.quantity || !form.unit || !form.schedule) {
+      alert("Please fill out all required fields")
       return
     }
 
-    addDoc(recipesCollectionRef, form)
+    addDoc(pillsCollectionRef, form)
 
     setForm({
-      title: "",
-      desc: "",
-      ingredients: [],
-      steps: []
+        name: "",
+        quantity: 0,
+        unit: 0,
+        schedule: "",
+        emails: []
     })
 
     setPopupActive(false)
-   }
+  }
 
-  const handleIngredient = (e, i) => {
-    const ingredientsClone = [...form.ingredients]
+  const handleEmail = (e, i) => {
+    const emailsClone = [...form.emails]
 
-    ingredientsClone[i] = e.target.value
+    emailsClone[i] = e.target.value
 
     setForm({
       ...form,
-      ingredients: ingredientsClone
+      emails: emailsClone
     })
   }
 
-  const handleStep = (e, i) => {
-    const stepsClone = [...form.steps]
-
-    stepsClone[i] = e.target.value
-
+  const handleEmailCount = () => {
     setForm({
       ...form,
-      steps: stepsClone
+      emails: [...form.emails, ""]
     })
   }
 
-  const handleIngredientCount = () => {
-    setForm({
-      ...form,
-      ingredients: [...form.ingredients, ""]
-    })
-  }
-
-  const handleStepCount = () => {
-    setForm({
-      ...form,
-      steps: [...form.steps, ""]
-    })
-  }
-
-  const removeRecipe = id => {
-    deleteDoc(doc(db, "recipes", id))
+  const removePill = id => {
+    deleteDoc(doc(db, "pills", id))
   }
 
   return (
     <div className="App">
-      <h1>My recipes</h1>
+      <h1>My Pills</h1>
 
-      <button onClick={() => setPopupActive(!popupActive)}>Add recipe</button>
+      <button onClick={() => setPopupActive(!popupActive)}>Add Pill</button>
 
-      <div className="recipes">
-        { recipes.map((recipe, i) => (
-          <div className="recipe" key={recipe.id}>
-            <h3>{ recipe.title }</h3>
+      <div className="pills">
+        { pills.map((pill, i) => (
+          <div className="pill" key={pill.id}>
+            <h3>{ pill.name }</h3>
 
-            <p dangerouslySetInnerHTML={{ __html: recipe.desc}}></p>
+            {/*<p dangerouslySetInnerHTML={{ __html: recipe.schedule}}></p>*/}
 
-            { recipe.viewing && 
+            { pill.viewing && 
             <div>
-              <h4>Ingredients</h4>
-              <ul>
-                { recipe.ingredients.map((ingredient, i) => (
-                  <li key={i}>{ ingredient }</li>
-                ))}
-              </ul>
+              <h4>Quantity</h4>
+              <h5>{ pill.quantity }</h5>
 
-              <h4>Steps</h4>
+              <h4>Unit Weight</h4>
+              <h5>{ pill.unit }</h5>
+
+              <h4>Schedule</h4>
+              <h5>{ pill.schedule }</h5>
+
+              <h4>Close Contacts</h4>
               <ol>
-                { recipe.steps.map((step, i) => (
-                  <li key={i}>{ step }</li>
+                { pill.emails.map((email, i) => (
+                  <li key={i}>● { email }</li>
                 ))}
-              </ol>
+              </ol> 
             </div>}
 
             <div className="buttons">
-              <button onClick={() => handleView(recipe.id)}>View { recipe.viewing ? 'less' : 'more' }</button>
-              <button className="remove" onClick={() => removeRecipe(recipe.id)}>Remove</button>
+              <button onClick={() => handleView(pill.id)}>View { pill.viewing ? 'less' : 'more' }</button>
+              <button className="remove" onClick={() => removePill(pill.id)}>Remove</button>
             </div>
           </div>
         ))}
@@ -147,51 +133,53 @@ function App() {
 
       { popupActive && <div className="popup">
         <div className="popup-inner">
-          <h2>Add a new recipe</h2>
+          <h2>Add a new pill</h2>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Title</label>
+              <label>Name</label>
               <input 
                 type='text' 
-                value={form.title} 
-                onChange={e => setForm({...form, title: e.target.value})} />
+                value={form.name} 
+                onChange={e => setForm({...form, name: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>Description</label>
-              <textarea 
+              <label>Quantity</label>
+              <input 
+                type='number' 
+                value={form.quantity} 
+                onChange={e => setForm({...form, quantity: e.target.value})} />
+            </div>
+            
+            <div className="form-group">
+              <label>Unit Weight</label>
+              <input 
+                type='number' 
+                value={form.unit} 
+                onChange={e => setForm({...form, unit: e.target.value})} />
+            </div>
+
+            <div className="form-group">
+              <label>Schedule (MTWRFSU)</label>
+              <input 
                 type='text' 
-                value={form.desc} 
-                onChange={e => setForm({...form, desc: e.target.value})} />
+                value={form.schedule} 
+                onChange={e => setForm({...form, schedule: e.target.value})} />
             </div>
 
             <div className="form-group">
-              <label>Ingredients</label>
+              <label>Close Contacts (email)</label>
               {
-                form.ingredients.map((ingredient, i) => (
+                form.emails.map((email, i) => (
                   <input 
-                    type='text'
+                    type='email'
                     key={i}
-                    value={ingredient} 
-                    onChange={e => handleIngredient(e, i)} />
+                    value={email} 
+                    onChange={e => handleEmail(e, i)} />
                 ))
               }
-              <button type="button" onClick={handleIngredientCount}>Add ingredient</button>
-            </div>
-
-            <div className="form-group">
-              <label>Steps</label>
-              {
-                form.steps.map((step, i) => (
-                  <textarea 
-                    type='text'
-                    key={i}
-                    value={step} 
-                    onChange={e => handleStep(e, i)} />
-                ))
-              }
-              <button type="button" onClick={handleStepCount}>Add step</button>
+              <button type="button" onClick={handleEmailCount}>Add email</button>
             </div>
 
             <div className="buttons">
