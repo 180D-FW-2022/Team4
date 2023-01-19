@@ -1,3 +1,4 @@
+#https://bc-robotics.com/tutorials/sending-email-using-python-raspberry-pi/
 import smtplib
 import time
 
