@@ -1,11 +1,12 @@
-import { db } from "./firebase"
+import { db, data } from "./firebase"
 import { useState, useEffect } from "react"
 import {
   collection,
   onSnapshot,
   doc,
   addDoc,
-  deleteDoc
+  deleteDoc,
+  setDoc
 } from "firebase/firestore"
 
 function App() {
@@ -16,11 +17,11 @@ function App() {
     unit: 0,
     schedule: "",
     emails: [],
+    compartment: 0
   })
   const [popupActive, setPopupActive] = useState(false)
 
   const pillsCollectionRef = collection(db, "pills")
-  console.log(pillsCollectionRef)
 
   useEffect(() => {
     onSnapshot(pillsCollectionRef, snapshot => {
@@ -38,7 +39,7 @@ function App() {
     const pillsClone = [...pills]
     
     pillsClone.forEach(pill => {
-      if (pill.id == id) {
+      if (pill.id === id) {
         pill.viewing = !pill.viewing
       } else {
         pill.viewing = false
@@ -51,19 +52,21 @@ function App() {
   const handleSubmit = e => {
     e.preventDefault()
 
-    if (!form.name || !form.quantity || !form.unit || !form.schedule) {
+    if (!form.name || !form.quantity || !form.unit || !form.schedule || !form.compartment) {
       alert("Please fill out all required fields")
       return
     }
 
-    addDoc(pillsCollectionRef, form)
+    setDoc(doc(db, "pills", form.compartment), form)
+    //addDoc(pillsCollectionRef, form)
 
     setForm({
         name: "",
         quantity: 0,
         unit: 0,
         schedule: "",
-        emails: []
+        emails: [],
+        compartment: 0
     })
 
     setPopupActive(false)
@@ -102,12 +105,13 @@ function App() {
           <div className="pill" key={pill.id}>
             <h3>{ pill.name }</h3>
 
-            {/*<p dangerouslySetInnerHTML={{ __html: recipe.schedule}}></p>*/}
-
             { pill.viewing && 
             <div>
               <h4>Quantity</h4>
               <h5>{ pill.quantity }</h5>
+
+              <h4>Compartment</h4>
+              <h5>{ pill.compartment }</h5>
 
               <h4>Unit Weight</h4>
               <h5>{ pill.unit }</h5>
@@ -142,6 +146,14 @@ function App() {
                 type='text' 
                 value={form.name} 
                 onChange={e => setForm({...form, name: e.target.value})} />
+            </div>
+
+            <div className="form-group">
+              <label>Compartment</label>
+              <input 
+                type='text' 
+                value={form.compartment} 
+                onChange={e => setForm({...form, compartment: e.target.value})} />
             </div>
 
             <div className="form-group">
