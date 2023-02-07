@@ -1,16 +1,6 @@
-#import pyrebase
 import time
 import sys
 
-#config = {"apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
-#        "authDomain": "pill-smart.firebaseapp.com",
-#        "projectId": "pill-smart",
-#        "storageBucket": "pill-smart.appspot.com",
-#        "messagingSenderId": "442471702404",
-#        "appId": "1:442471702404:web:a4271dd704ac0d805687d1",
-#        "measurementId": "G-S5WK8XZ29Q"};
-
-#firebase = pyrebase.initialize_app(config)
 
 EMULATE_HX711=False
 
@@ -32,7 +22,7 @@ def cleanAndExit():
     sys.exit()
 
 hx = HX711(5, 6)
-
+hx2 = HX711(17, 27)
 # I've found out that, for some reason, the order of the bytes is not always the same between versions of python, numpy and the hx711 itself.
 # Still need to figure out why does it change.
 # If you're experiencing super random values, change these values to MSB or LSB until to get more stable values.
@@ -41,6 +31,8 @@ hx = HX711(5, 6)
 # The second paramter is the order of the bits inside each byte.
 # According to the HX711 Datasheet, the second parameter is MSB so you shouldn't need to modify it.
 hx.set_reading_format("MSB", "MSB")
+hx2.set_reading_format("MSB", "MSB")
+
 
 # HOW TO CALCULATE THE REFFERENCE UNIT
 # To set the reference unit to 1. Put 1kg on your sensor or anything you have and know exactly how much it weights.
@@ -49,12 +41,17 @@ hx.set_reading_format("MSB", "MSB")
 # If 2000 grams is 184000 then 1000 grams is 184000 / 2000 = 92.
 #hx.set_reference_unit(113)
 hx.set_reference_unit(1050)
+hx2.set_reference_unit(1050)
+
 
 hx.reset()
+hx2.reset()
 
 hx.tare()
+hx2.tare()
 
 print("Tare done! Add weight now...")
+
 
 # to use both channels, you'll need to tare them both
 #hx.tare_A()
@@ -72,7 +69,8 @@ while True:
         
         # Prints the weight. Comment if you're debbuging the MSB and LSB issue.
         val = max(0,int(hx.get_weight(5)))
-        print(val)
+        val2 = max(0, int(hx2.get_weight(5)))
+        print(str(val) + " " + str(val2))
 
         # To get weight from both channels (if you have load cells hooked up 
         # to both channel A and B), do something like this
@@ -81,7 +79,9 @@ while True:
         #print "A: %s  B: %s" % ( val_A, val_B )
 
         hx.power_down()
+        hx2.power_down()
         hx.power_up()
+        hx2.power_up()
         time.sleep(0.1)
 
     except (KeyboardInterrupt, SystemExit):

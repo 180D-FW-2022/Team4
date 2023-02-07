@@ -16,7 +16,7 @@ GPIO.setup(solenoid_pin, GPIO.OUT)
 
 # Activate the solenoid for a second.
 GPIO.output(8, GPIO.HIGH)
-sleep(1)
+sleep(5)
 GPIO.output(8, GPIO.LOW)
 
 GPIO.cleanup()
