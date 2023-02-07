@@ -25,8 +25,11 @@ import datetime
 import os
 from time import sleep
 import RPi.GPIO as GPIO
+import paho.mqtt.client as mqtt
 
 solenoid_pin=8
+comm_flag = 1
+
 
 RAD_TO_DEG = 57.29578
 M_PI = 3.14159265358979323846
@@ -156,7 +159,24 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
     return KFangleX
 
 
-
+def on_connect(client, userdata, flags, rc):
+    print("Connection returned result: "+str(rc))
+# Subscribing in on_connect() means that if we lose the connection and
+# reconnect then subscriptions will be renewed.
+    client.subscribe("ece180d/test3", qos=1)
+# The callback of the client when it disconnects.
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print('Unexpected Disconnect')
+    else:
+        print('Expected Disconnect')
+# The default message callback.
+# (you can create separate callbacks per subscribed topic)
+def on_message(client, userdata, message):
+    #print('Received message: "' + str(message.payload) + '" on topic "' + message.topic + '" with QoS ' + str(message.qos))
+    global comm_flag
+    comm_flag = int(message.payload)
+   # print("ON_MESSAGE: " + str(comm_flag))
 
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
 acc_medianTable1X = [1] * ACC_MEDIANTABLESIZE
@@ -397,6 +417,23 @@ def readIMU():
 
     ##################### END Tilt Compensation ########################
 
+
+client = mqtt.Client()
+    # add additional client options (security, certifications, etc.)
+    # many default options should be good to start off.
+    # add callbacks to client.
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+
+    # 2. connect to a broker using one of the connect*() functions.
+client.connect_async('test.mosquitto.org')
+    # client.connect("mqtt.eclipse.org")
+    # 3. call one of the loop*() functions to maintain network traffic flow with the broker.
+
+client.loop_start()
+
+
 while True:
 
     levelFlag = False   #create boolean for whether or not IMU is upright or not
@@ -406,7 +443,7 @@ while True:
     while count < 50:
         CFangleY = readIMU()
         print(CFangleY)
-        if (CFangleY <= -45) and (CFangleY >= -55):
+        if (CFangleY <= -35) and (CFangleY >= -65) and (comm_flag == 1):         
             count = count+1                     
         else:
             count = 0  
@@ -422,14 +459,4 @@ while True:
 
     GPIO.cleanup()
 
-
-#if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
-    #  outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
-    
-
-
-  #  print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
-
-    #slow program down a bit, makes the output more readable
-  #  time.sleep(0.01)
 
