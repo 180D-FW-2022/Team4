@@ -1,16 +1,6 @@
-import pyrebase
+
 import time
 import sys
-
-config = {"apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
-        "authDomain": "pill-smart.firebaseapp.com",
-        "projectId": "pill-smart",
-        "storageBucket": "pill-smart.appspot.com",
-        "messagingSenderId": "442471702404",
-        "appId": "1:442471702404:web:a4271dd704ac0d805687d1",
-        "measurementId": "G-S5WK8XZ29Q"};
-
-firebase = pyrebase.initialize_app(config)
 
 EMULATE_HX711=False
 
@@ -48,7 +38,7 @@ hx.set_reading_format("MSB", "MSB")
 # and I got numbers around 184000 when I added 2kg. So, according to the rule of thirds:
 # If 2000 grams is 184000 then 1000 grams is 184000 / 2000 = 92.
 #hx.set_reference_unit(113)
-hx.set_reference_unit(485)
+hx.set_reference_unit(1050)
 
 hx.reset()
 
