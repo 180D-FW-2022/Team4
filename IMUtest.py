@@ -403,7 +403,7 @@ while True:
         GPIO.setup(solenoid_pin, GPIO.OUT)
 
 
-        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <=125):         
+        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 90) and (tiltCompensatedHeading <=125):         
             levelFlag = True                        #set flag to True if IMU is upright
 
             # Activate the solenoid for a second.
