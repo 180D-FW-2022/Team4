@@ -403,7 +403,7 @@ while True:
         GPIO.setup(solenoid_pin, GPIO.OUT)
 
 
-        if (CFangleY <= -75) and (CFangleY >= -105):         
+        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <=125):         
             levelFlag = True                        #set flag to True if IMU is upright
 
             # Activate the solenoid for a second.
@@ -412,7 +412,7 @@ while True:
             levelFlag = False                       #set flag to False if IMU is not upright
             GPIO.output(solenoid_pin, GPIO.LOW)
 
-    if 0:                       #Change to '0' to stop  showing the heading
+    if 1:                       #Change to '0' to stop  showing the heading
         outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
 
     if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter

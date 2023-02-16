@@ -386,7 +386,7 @@ def readIMU():
         tiltCompensatedHeading += 360
 
 
-    return CFangleY
+    return CFangleY, tiltCompensatedHeading
 
 
 
@@ -404,9 +404,9 @@ while True:
     count = 0
 
     while count < 50:
-        CFangleY = readIMU()
+        CFangleY, tiltCompensatedHeading = readIMU()
         print(CFangleY)
-        if (CFangleY <= -45) and (CFangleY >= -55):
+        if (CFangleY <= -45) and (CFangleY >= -55) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <= 120):
             count = count+1                     
         else:
             count = 0  

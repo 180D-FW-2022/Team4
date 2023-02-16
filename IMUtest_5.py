@@ -163,7 +163,7 @@ def on_connect(client, userdata, flags, rc):
     print("Connection returned result: "+str(rc))
 # Subscribing in on_connect() means that if we lose the connection and
 # reconnect then subscriptions will be renewed.
-    client.subscribe("ece180d/test2", qos=1)
+    client.subscribe("ece180d/test3", qos=1)
 # The callback of the client when it disconnects.
 def on_disconnect(client, userdata, rc):
     if rc != 0:
@@ -406,7 +406,7 @@ def readIMU():
         tiltCompensatedHeading += 360
 
 
-    return CFangleY
+    return CFangleY, tiltCompensatedHeading
 
 
 
@@ -441,9 +441,9 @@ while True:
     count = 0
 
     while count < 50:
-        CFangleY = readIMU()
+        CFangleY, tiltCompensatedHeading = readIMU()
         print(CFangleY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (comm_flag == 1):         
+        if (CFangleY <= -35) and (CFangleY >= -65) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <= 120) and (comm_flag == 1):         
             count = count+1                     
         else:
             count = 0  

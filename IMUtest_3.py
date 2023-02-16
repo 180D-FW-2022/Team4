@@ -393,7 +393,7 @@ while True:
 
     levelFlag = False   #create boolean for whether or not IMU is upright or not
 
-    if 1:                       #Change to '0' to stop showing the angles from the accelerometer
+    if 0:                       #Change to '0' to stop showing the angles from the accelerometer
         outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
 
     if 0:                       #Change to '0' to stop  showing the angles from the gyro
@@ -407,7 +407,7 @@ while True:
             levelFlag = False                       #set flag to False if IMU is not upright 
 
 
-    if 0:                       #Change to '0' to stop  showing the heading
+    if 1:                       #Change to '0' to stop  showing the heading
         outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
 
     if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
