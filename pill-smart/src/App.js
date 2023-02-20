@@ -1,12 +1,12 @@
-import { db, data } from "./firebase"
+import { db } from "./firebase"
 import { useState, useEffect } from "react"
 import {
   collection,
   onSnapshot,
   doc,
-  addDoc,
   deleteDoc,
-  setDoc
+  setDoc,
+  addDoc
 } from "firebase/firestore"
 
 function App() {
@@ -22,6 +22,9 @@ function App() {
   const [popupActive, setPopupActive] = useState(false)
 
   const pillsCollectionRef = collection(db, "pills")
+  const mailCollectionRef = collection(db, "mail")
+
+  const date = new Date();
 
   useEffect(() => {
     onSnapshot(pillsCollectionRef, snapshot => {
@@ -92,6 +95,17 @@ function App() {
 
   const removePill = id => {
     deleteDoc(doc(db, "pills", id))
+  }
+
+  function sendEmail(email) {
+    addDoc(mailCollectionRef, {
+      "to": [email],
+      "message": {
+        subject: 'VS Code Test',
+        text: 'Test',
+        html: 'Test',
+      }
+    })
   }
 
   return (
