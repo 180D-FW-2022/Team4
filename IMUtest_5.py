@@ -376,8 +376,11 @@ def readIMU():
 
     #Calculate pitch and roll
     pitch = math.asin(accXnorm)
-    roll = -math.asin(accYnorm/math.cos(pitch))
-
+    if (pitch == 90 or pitch == 270):
+        roll = 0
+    else:
+        roll = -math.asin(accYnorm/math.cos(pitch))
+    
 
     #Calculate the new tilt compensated values
     #The compass and accelerometer are orientated differently on the the BerryIMUv1, v2 and v3.
@@ -442,8 +445,8 @@ while True:
 
     while count < 50:
         CFangleY, tiltCompensatedHeading = readIMU()
-        print(CFangleY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <= 120) and (comm_flag == 1):         
+        print(CFangleY, tiltCompensatedHeading)
+        if (CFangleY <= -35) and (CFangleY >= -65) and (tiltCompensatedHeading >= 120) and (tiltCompensatedHeading <= 150) and (comm_flag == 1):         
             count = count+1                     
         else:
             count = 0  
