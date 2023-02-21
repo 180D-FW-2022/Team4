@@ -15,7 +15,7 @@
 #
 #    http://ozzmaker.com/
 
-
+#formally known as berryIMU.py
 
 import sys
 import time
