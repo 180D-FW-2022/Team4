@@ -403,10 +403,10 @@ while True:
 
     count = 0
 
-    while count < 50:
+    while count < 25:
         CFangleY, tiltCompensatedHeading = readIMU()
-        print(CFangleY)
-        if (CFangleY <= -45) and (CFangleY >= -55) and (tiltCompensatedHeading >= 100) and (tiltCompensatedHeading <= 120):
+        print(CFangleY, tiltCompensatedHeading)
+        if (CFangleY <= -45) and (CFangleY >= -55) and (tiltCompensatedHeading >= 140) and (tiltCompensatedHeading <= 160):
             count = count+1                     
         else:
             count = 0  
