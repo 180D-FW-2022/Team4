@@ -443,7 +443,7 @@ while True:
 
     count = 0
 
-    while count < 50:
+    while count < 25:
         CFangleY, kalmanY = readIMU()
         #print(CFangleY, kalmanY)
         if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -90) and (kalmanY <= -85) and (comm_flag == 1):         
