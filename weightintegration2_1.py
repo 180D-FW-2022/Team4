@@ -24,11 +24,8 @@ import IMU
 import datetime
 import os
 from time import sleep
-import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
-
-solenoid_pin=8
-comm_flag = 1
+import pyrebase
+from random import randint
 
 
 RAD_TO_DEG = 57.29578
@@ -158,25 +155,6 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
 
     return KFangleX
 
-
-def on_connect(client, userdata, flags, rc):
-    print("Connection returned result: "+str(rc))
-# Subscribing in on_connect() means that if we lose the connection and
-# reconnect then subscriptions will be renewed.
-    client.subscribe("ece180d/test3", qos=1)
-# The callback of the client when it disconnects.
-def on_disconnect(client, userdata, rc):
-    if rc != 0:
-        print('Unexpected Disconnect')
-    else:
-        print('Expected Disconnect')
-# The default message callback.
-# (you can create separate callbacks per subscribed topic)
-def on_message(client, userdata, message):
-    #print('Received message: "' + str(message.payload) + '" on topic "' + message.topic + '" with QoS ' + str(message.qos))
-    global comm_flag
-    comm_flag = int(message.payload)
-   # print("ON_MESSAGE: " + str(comm_flag))
 
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
 acc_medianTable1X = [1] * ACC_MEDIANTABLESIZE
@@ -412,54 +390,101 @@ def readIMU():
     return CFangleY, kalmanY
 
 
-
-
-
-    
-
-
     ##################### END Tilt Compensation ########################
 
+config = {
+  "apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
+  "authDomain": "pill-smart.firebaseapp.com",
+  "databaseURL": "https://pill-smart-default-rtdb.firebaseio.com",
+  "storageBucket": "pill-smart.appspot.com"
+}
 
-client = mqtt.Client()
-    # add additional client options (security, certifications, etc.)
-    # many default options should be good to start off.
-    # add callbacks to client.
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
-    # 2. connect to a broker using one of the connect*() functions.
-client.connect_async('test.mosquitto.org')
-    # client.connect("mqtt.eclipse.org")
-    # 3. call one of the loop*() functions to maintain network traffic flow with the broker.
 
-client.loop_start()
+#HX711
+EMULATE_HX711=False
 
+referenceUnit = 1
+
+if not EMULATE_HX711:
+    import RPi.GPIO as GPIO
+    from hx711 import HX711
+else:
+    from emulated_hx711 import HX711
+
+def cleanAndExit():
+    print("Cleaning...")
+
+    if not EMULATE_HX711:
+        GPIO.cleanup()
+        
+    print("Bye!")
+    sys.exit()
+
+hx = HX711(5, 6)
+hx2 = HX711(17,27)
+
+hx.set_reading_format("MSB", "MSB")
+hx2.set_reading_format("MSB","MSB")
+hx.set_reference_unit(1050)
+hx2.set_reference_unit(1050)
+
+hx.reset()
+hx2.reset()
+
+hx.tare()
+hx2.tare()
+
+print("Tare done! Add weight now...")
+
+print("Send Data to Firebase Using Raspberry Pi")
+print("—————————————-")
+print()
 
 while True:
 
-    levelFlag = False   #create boolean for whether or not IMU is upright or not
-
     count = 0
 
-    while count < 25:
+    while count < 30:
         CFangleY, kalmanY = readIMU()
         #print(CFangleY, kalmanY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87) and (comm_flag == 1):         
+        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87):         
             count = count+1                     
         else:
             count = 0  
-                  
-    levelFlag = True
 
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(solenoid_pin, GPIO.OUT)
+    prev = 0
+    prev2 = 0
+    count = 0
+  
+    while count < 5:
+        CFangleY, kalmanY = readIMU()
+        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87):
+            val = max(0, int(hx.get_weight(5)))
+            val2 = max(0, int(hx2.get_weight(5)))
 
-    GPIO.output(solenoid_pin,GPIO.HIGH)
-    sleep(3)
-    GPIO.output(solenoid_pin,GPIO.LOW)
+            if (prev == val) and (prev2 == val2):
+                count += 1
+            prev = val
+            prev2 = val2
+    
+    compartment1_weight = float(prev)
+    compartment2_weight = float(prev2)
 
-    GPIO.cleanup()
+
+    print("Compartment 1 Weight: {} g".format(compartment1_weight))
+    print()
+
+    data = {
+        "weight": compartment1_weight,
+    }
+    data2 = {
+        "weight": compartment2_weight,
+    }
+
+    db.child("pill-data").child("compartment-1").update(data)
+    db.child("pill-data").child("compartment-2").update(data2)
 
 
