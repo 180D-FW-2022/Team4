@@ -25,10 +25,17 @@ import datetime
 import os
 from time import sleep
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
+import pyrebase
 
 solenoid_pin=8
 comm_flag = 0
+
+config = {
+  "apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
+  "authDomain": "pill-smart.firebaseapp.com",
+  "databaseURL": "https://pill-smart-default-rtdb.firebaseio.com",
+  "storageBucket": "pill-smart.appspot.com"
+}
 
 
 RAD_TO_DEG = 57.29578
@@ -157,26 +164,6 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
     XP_11 = XP_11 - ( K_1 * XP_01 )
 
     return KFangleX
-
-
-def on_connect(client, userdata, flags, rc):
-    print("Connection returned result: "+str(rc))
-# Subscribing in on_connect() means that if we lose the connection and
-# reconnect then subscriptions will be renewed.
-    client.subscribe("ece180d/test3", qos=1)
-# The callback of the client when it disconnects.
-def on_disconnect(client, userdata, rc):
-    if rc != 0:
-        print('Unexpected Disconnect')
-    else:
-        print('Expected Disconnect')
-# The default message callback.
-# (you can create separate callbacks per subscribed topic)
-def on_message(client, userdata, message):
-    #print('Received message: "' + str(message.payload) + '" on topic "' + message.topic + '" with QoS ' + str(message.qos))
-    global comm_flag
-    comm_flag = int(message.payload)
-   # print("ON_MESSAGE: " + str(comm_flag))
 
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
 acc_medianTable1X = [1] * ACC_MEDIANTABLESIZE
@@ -421,20 +408,9 @@ def readIMU():
     ##################### END Tilt Compensation ########################
 
 
-client = mqtt.Client()
-    # add additional client options (security, certifications, etc.)
-    # many default options should be good to start off.
-    # add callbacks to client.
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
 
-    # 2. connect to a broker using one of the connect*() functions.
-client.connect_async('test.mosquitto.org')
-    # client.connect("mqtt.eclipse.org")
-    # 3. call one of the loop*() functions to maintain network traffic flow with the broker.
-
-client.loop_start()
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
 
 while True:
@@ -443,21 +419,29 @@ while True:
 
     count = 0
 
-    while count < 25:
+    while count < 20:
         CFangleY, kalmanY = readIMU()
-        #print(CFangleY, kalmanY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87) and (comm_flag == 1):         
-            count = count+1                     
+        comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
+        print(CFangleY, kalmanY)
+        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -90) and (kalmanY <= -84) and (comm_flag == 1):         
+            count = count+1        
+          #  print(comm_flag)
         else:
             count = 0  
                   
     levelFlag = True
 
+    data = {
+    "pillbox-status": 0,
+    }
+
+    db.child("pillbox-status").update(data)
+
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(solenoid_pin, GPIO.OUT)
 
     GPIO.output(solenoid_pin,GPIO.HIGH)
-    sleep(3)
+    sleep(5)
     GPIO.output(solenoid_pin,GPIO.LOW)
 
     GPIO.cleanup()
