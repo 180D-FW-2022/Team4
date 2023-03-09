@@ -422,8 +422,9 @@ while True:
     while count < 20:
         CFangleY, kalmanY = readIMU()
         comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
-        print(CFangleY, kalmanY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -90) and (kalmanY <= -84) and (comm_flag == 1):         
+        #print(CFangleY, kalmanY)
+        #print(comm_flag)
+        if (CFangleY <= -40) and (CFangleY >= -60) and (kalmanY <= -87.5) and (kalmanY >= -90) and (comm_flag == 1):         
             count = count+1        
           #  print(comm_flag)
         else:
