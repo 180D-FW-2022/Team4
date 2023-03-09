@@ -34,7 +34,7 @@ let docSnapOne = await getDoc(compOne);
 let weightOne = Number(docSnapOne.data()["unit"])
 onSnapshot(doc(db, "pills", "1"), (doc) => {
   weightOne = parseInt(doc.data()["unit"]);
-  console.log("Unit weight is: " + weightOne)
+  //console.log("Unit weight is: " + weightOne)
 })
 
 const compTwo = doc(db, "pills", "2")
@@ -42,7 +42,7 @@ let docSnapTwo = await getDoc(compTwo);
 let weightTwo = Number(docSnapTwo.data()["unit"])
 onSnapshot(doc(db, "pills", "2"), (doc) => {
   weightTwo = parseInt(doc.data()["unit"]);
-  console.log("Unit weight is: " + weightTwo)
+  //console.log("Unit weight is: " + weightTwo)
 })
 
 const compThree = doc(db, "pills", "3")
@@ -50,7 +50,7 @@ let docSnapThree = await getDoc(compThree);
 let weightThree = Number(docSnapThree.data()["unit"])
 onSnapshot(doc(db, "pills", "3"), (doc) => {
   weightThree = parseInt(doc.data()["unit"]);
-  console.log("Unit weight is: " + weightThree)
+  //console.log("Unit weight is: " + weightThree)
 })
 
 const compFour = doc(db, "pills", "4")
@@ -58,7 +58,7 @@ let docSnapFour = await getDoc(compFour);
 let weightFour = Number(docSnapFour.data()["unit"])
 onSnapshot(doc(db, "pills", "4"), (doc) => {
   weightFour = parseInt(doc.data()["unit"]);
-  console.log("Unit weight is: " + weightFour)
+  //console.log("Unit weight is: " + weightFour)
 })
 
 //To retrieve data from Firebase Realtime database

@@ -6,7 +6,9 @@ import {
   doc,
   deleteDoc,
   setDoc,
-  addDoc
+  addDoc,
+  getDoc,
+  updateDoc
 } from "firebase/firestore"
 
 function App() {
@@ -17,14 +19,15 @@ function App() {
     unit: 0,
     schedule: "",
     emails: [],
-    compartment: 0
+    compartment: 0,
+    consumed: false
   })
   const [popupActive, setPopupActive] = useState(false)
+  const [pillConsumed1, setFlag1] = useState(0)
+  const [pillConsumed2, setFlag2] = useState(0)
 
   const pillsCollectionRef = collection(db, "pills")
   const mailCollectionRef = collection(db, "mail")
-
-  const date = new Date();
 
   useEffect(() => {
     onSnapshot(pillsCollectionRef, snapshot => {
@@ -36,6 +39,9 @@ function App() {
         }
       }))
     })
+
+    setInterval(sendEmail, 60000, "ece180dagroup4@gmail.com")
+    setInterval(pillConsumed, 60000)
   }, [])
 
   const handleView = id => {
@@ -61,7 +67,6 @@ function App() {
     }
 
     setDoc(doc(db, "pills", form.compartment), form)
-    //addDoc(pillsCollectionRef, form)
 
     setForm({
         name: "",
@@ -69,7 +74,8 @@ function App() {
         unit: 0,
         schedule: "",
         emails: [],
-        compartment: 0
+        compartment: 0,
+        consumed: false
     })
 
     setPopupActive(false)
@@ -97,22 +103,114 @@ function App() {
     deleteDoc(doc(db, "pills", id))
   }
 
-  function sendEmail(email) {
-    addDoc(mailCollectionRef, {
-      "to": [email],
-      "message": {
-        subject: 'VS Code Test',
-        text: 'Test',
-        html: 'Test',
+  async function sendEmail(email, subject = "PillSmart Alert", text = "", html = "") {
+    //if it's the beginning of a new day, change the flag in the database to 0
+    //if it's the eighth hour, send an email with all the pills that need to be taken today
+    //if it's the twelfth hour, send a follow-up email with all the pills they still need to take
+    const date = new Date();
+    
+    if (!email) {
+      console.error("No email was provided");
+    } else {
+      if (date.getHours() === 0 && date.getMinutes() === 0) {
+        await updateDoc(doc(db, "pills", "1"), {consumed: false})
+        await updateDoc(doc(db, "pills", "2"), {consumed: false})
+      } else if (date.getHours() === 8 && date.getMinutes() === 0) {
+        let consumed1 = await getDoc(doc(db, "pills", "1"))
+        consumed1 = consumed1.data()["consumed"];
+        
+        let consumed2 = await getDoc(doc(db, "pills", "2"))
+        consumed2 = consumed1.data()["consumed"];
+
+        if (!consumed1 && consumed2) {
+          text = "Please consume a pill in Compartment 1"
+        } else if (consumed1 && !consumed2) {
+          text = "Please consume a pill in Compartment 2"
+        } else if (!consumed1 && !consumed2) {
+          text = "Please consume a pill in Compartment 1 and Compartment 2"
+        }
+        
+        if (!consumed1 || !consumed2) {
+          addDoc(mailCollectionRef, {
+            "to": [email],
+            "message": {
+              subject: subject,
+              text: text,
+              html: html
+            }
+          })
+        }
+
+      } else if (date.getHours() === 17 && date.getMinutes() === 43) {
+        let consumed1 = await getDoc(doc(db, "pills", "1"));
+        let emails = consumed1.data()["emails"];
+        consumed1 = consumed1.data()["consumed"];
+        
+        let consumed2 = await getDoc(doc(db, "pills", "2"))
+        //emails = emails.concat(consumed2.data()["emails"])
+        consumed2 = consumed2.data()["consumed"];
+
+        if (!consumed1 && consumed2) {
+          text = "REMINDER: Please consume a pill in Compartment 1"
+        } else if (consumed1 && !consumed2) {
+          text = "REMINDER: Please consume a pill in Compartment 2"
+        } else if (!consumed1 && !consumed2) {
+          text = "REMINDER: Please consume a pill in Compartment 1 and Compartment 2"
+        }
+        
+        if (!consumed1 || !consumed2) {
+          addDoc(mailCollectionRef, {
+            "to": [email],
+            "message": {
+              subject: "REMINDER: " + subject,
+              text: text,
+              html: html
+            }
+          })
+
+          for(let i = 0; i < emails.length; i++) {
+            addDoc(mailCollectionRef, {
+              "to": [emails[i]],
+              "message": {
+                subject: subject,
+                text: "Your loved one or patient has not taken their pill, please remind them to do so today.",
+                html: html
+              }
+            })
+          }
+        }
       }
-    })
+    }
+  }
+
+  async function pillConsumed() {
+    let compartment1 = await getDoc(doc(db, "pills", "1"))
+    compartment1 = compartment1.data()["quantity"];
+    console.log("Compartment 1 is " + compartment1)
+    console.log("pillConsumed1 is " + pillConsumed1)
+
+    let compartment2 = await getDoc(doc(db, "pills", "2"))
+    compartment2 = compartment2.data()["quantity"];
+    console.log("Compartment 2 is " + compartment2)
+    console.log("pillConsumed2 is " + pillConsumed2)
+
+    if (compartment1 < pillConsumed1) {
+      console.log("HERE I AM")
+      await updateDoc(doc(db, "pills", "1"), {consumed: true})
+    }
+    if (compartment2 < pillConsumed2) {
+      await updateDoc(doc(db, "pills", "2"), {consumed: true})
+    }
+    setFlag1(compartment1)
+    setFlag2(compartment2)
   }
 
   return (
     <div className="App">
       <h1>My Pills</h1>
 
-      <button onClick={() => setPopupActive(!popupActive)}>Add Pill</button>
+      {/* <button onClick={() => setPopupActive(!popupActive)}>Add Pill</button> */}
+      <button onClick={() => pillConsumed()}>Add Pill</button>
 
       <div className="pills">
         { pills.map((pill, i) => (
