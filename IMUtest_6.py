@@ -415,26 +415,25 @@ db = firebase.database()
 
 while True:
 
-    levelFlag = False   #create boolean for whether or not IMU is upright or not
+    #levelFlag = False   #create boolean for whether or not IMU is upright or not
 
     count = 0
+
+    data = {
+    "pillbox-status": 0,
+    }
 
     while count < 20:
         CFangleY, kalmanY = readIMU()
         comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
         #print(CFangleY, kalmanY)
         #print(comm_flag)
-        if (CFangleY <= -40) and (CFangleY >= -60) and (kalmanY <= -87.5) and (kalmanY >= -90) and (comm_flag == 1):         
-            count = count+1        
-          #  print(comm_flag)
+        if (CFangleY <= -40) and (CFangleY >= -60) and (kalmanY >= -89.5) and (kalmanY <= -87.5) and (comm_flag == 1):         
+            count = count+1                     
         else:
             count = 0  
                   
-    levelFlag = True
-
-    data = {
-    "pillbox-status": 0,
-    }
+    #levelFlag = True
 
     db.child("pillbox-status").update(data)
 
@@ -446,5 +445,3 @@ while True:
     GPIO.output(solenoid_pin,GPIO.LOW)
 
     GPIO.cleanup()
-
-
