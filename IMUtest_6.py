@@ -396,7 +396,7 @@ def readIMU():
         tiltCompensatedHeading += 360
     """
 
-    return CFangleY, AccXangle
+    return AccXangle, AccYangle
 
 
 
@@ -423,12 +423,12 @@ while True:
     "pillbox-status": 0,
     }
 
-    while count < 20:
-        CFangleY, AccXangle = readIMU()
+    while count < 15:
+        AccXangle, AccYangle = readIMU()
         comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
-        #print(CFangleY, AccXangle)
+        print(AccXangle, AccYangle)
         #print(comm_flag)
-        if (CFangleY <= -40) and (CFangleY >= -60) and (AccXangle >= -155) and (AccXangle <= -135) and (comm_flag == 1):         
+        if (AccXangle <= 7) and (AccXangle >= 3) and (AccYangle >= 1) and (AccYangle <= 3) and (comm_flag == 1):         
             count = count+1                     
         else:
             count = 0  
