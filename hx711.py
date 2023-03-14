@@ -20,6 +20,7 @@ class HX711:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.PD_SCK, GPIO.OUT)
         GPIO.setup(self.DOUT, GPIO.IN)
+        GPIO.setup(14,GPIO.OUT)
 
         self.GAIN = 0
 
