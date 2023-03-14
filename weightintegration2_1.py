@@ -353,7 +353,7 @@ def readIMU():
 
 
     #Calculate pitch and roll
-    pitch = math.asin(accXnorm)
+    """pitch = math.asin(accXnorm)
     if (pitch == 90 or pitch == 270):
         roll = 0
     else:
@@ -385,7 +385,7 @@ def readIMU():
 
     if tiltCompensatedHeading < 0:
         tiltCompensatedHeading += 360
-
+"""
 
     return CFangleY, kalmanY
 
@@ -428,8 +428,8 @@ hx2 = HX711(17,27)
 
 hx.set_reading_format("MSB", "MSB")
 hx2.set_reading_format("MSB","MSB")
-hx.set_reference_unit(1050)
-hx2.set_reference_unit(1050)
+hx.set_reference_unit(1103)
+hx2.set_reference_unit(1054)
 
 hx.reset()
 hx2.reset()
@@ -450,7 +450,7 @@ while True:
     while count < 30:
         CFangleY, kalmanY = readIMU()
         #print(CFangleY, kalmanY)
-        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87):         
+        if (CFangleY <= -30) and (CFangleY >= -60) and (kalmanY >= -90.5) and (kalmanY <= -88):         
             count = count+1                     
         else:
             count = 0  
@@ -461,7 +461,7 @@ while True:
   
     while count < 5:
         CFangleY, kalmanY = readIMU()
-        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -89) and (kalmanY <= -87):
+        if (CFangleY <= -35) and (CFangleY >= -65) and (kalmanY >= -91) and (kalmanY <= -89):
             val = max(0, int(hx.get_weight(5)))
             val2 = max(0, int(hx2.get_weight(5)))
 

@@ -39,8 +39,8 @@ hx2 = HX711(17,27)
 
 hx.set_reading_format("MSB", "MSB")
 hx2.set_reading_format("MSB","MSB")
-hx.set_reference_unit(1050)
-hx2.set_reference_unit(1050)
+hx.set_reference_unit(1103)
+hx2.set_reference_unit(1054)
 
 hx.reset()
 hx2.reset()
