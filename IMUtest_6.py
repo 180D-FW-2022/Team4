@@ -360,7 +360,7 @@ def readIMU():
     accXnorm = ACCx/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
     accYnorm = ACCy/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
 
-
+    """
     #Calculate pitch and roll
     pitch = math.asin(accXnorm)
     if (pitch == 90 or pitch == 270):
@@ -394,9 +394,9 @@ def readIMU():
 
     if tiltCompensatedHeading < 0:
         tiltCompensatedHeading += 360
+    """
 
-
-    return CFangleY, kalmanY
+    return CFangleY, AccXangle
 
 
 
@@ -424,11 +424,11 @@ while True:
     }
 
     while count < 20:
-        CFangleY, kalmanY = readIMU()
+        CFangleY, AccXangle = readIMU()
         comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
-        #print(CFangleY, kalmanY)
+        #print(CFangleY, AccXangle)
         #print(comm_flag)
-        if (CFangleY <= -40) and (CFangleY >= -60) and (kalmanY >= -89.5) and (kalmanY <= -87.5) and (comm_flag == 1):         
+        if (CFangleY <= -40) and (CFangleY >= -60) and (AccXangle >= -155) and (AccXangle <= -135) and (comm_flag == 1):         
             count = count+1                     
         else:
             count = 0  
