@@ -11,6 +11,14 @@ import {
   updateDoc
 } from "firebase/firestore"
 
+let dayMapping = {0: "Sunday",
+                  1: "Monday",
+                  2: "Tuesday",
+                  3: "Wednesday",
+                  4: "Thursday",
+                  5: "Friday",
+                  6: "Saturday"}
+
 function App() {
   const [pills, setPills] = useState([])
   const [form, setForm] = useState({
@@ -25,6 +33,7 @@ function App() {
   const [popupActive, setPopupActive] = useState(false)
   const [pillConsumed1, setFlag1] = useState(0)
   const [pillConsumed2, setFlag2] = useState(0)
+  var pillToEat = 0
 
   const pillsCollectionRef = collection(db, "pills")
   const mailCollectionRef = collection(db, "mail")
@@ -65,6 +74,31 @@ function App() {
       alert("Please fill out all required fields")
       return
     }
+
+    // format the schedule string for easier use with voice assistant and web application
+    let formatted_schedule = ""
+    if (form.schedule.includes("M")) {  
+      formatted_schedule = formatted_schedule + "Monday"
+    } 
+    if (form.schedule.includes("T")) {
+      formatted_schedule = formatted_schedule + "Tuesday"
+    } 
+    if (form.schedule.includes("W")) {
+      formatted_schedule = formatted_schedule + "Wednesday"
+    } 
+    if (form.schedule.includes("R")) {
+      formatted_schedule = formatted_schedule + "Thursday"
+    } 
+    if (form.schedule.includes("F")) {
+      formatted_schedule = formatted_schedule + "Friday"
+    } 
+    if (form.schedule.includes("S")) {
+      formatted_schedule = formatted_schedule + "Saturday"
+    } 
+    if (form.schedule.includes("U")) {
+      formatted_schedule = formatted_schedule + "Sunday"
+    }
+    form.schedule = formatted_schedule
 
     setDoc(doc(db, "pills", form.compartment), form)
 
@@ -108,18 +142,29 @@ function App() {
     //if it's the eighth hour, send an email with all the pills that need to be taken today
     //if it's the twelfth hour, send a follow-up email with all the pills they still need to take
     const date = new Date();
+    const day = dayMapping[date.getDay()];
+
+    let consumed1 = await getDoc(doc(db, "pills", "1"))
+    let consumed2 = await getDoc(doc(db, "pills", "2"))
     
     if (!email) {
       console.error("No email was provided");
     } else {
-      if (date.getHours() === 0 && date.getMinutes() === 0) {
+      if (date.getHours() === 13 && date.getMinutes() === 54) {
+        //console.log("in the day update")
         await updateDoc(doc(db, "pills", "1"), {consumed: false})
         await updateDoc(doc(db, "pills", "2"), {consumed: false})
-      } else if (date.getHours() === 8 && date.getMinutes() === 0) {
-        let consumed1 = await getDoc(doc(db, "pills", "1"))
+
+        let schedule1 = consumed1.data()["schedule"]
+        let schedule2 = consumed2.data()["schedule"]
+        if (schedule1.includes(day)) {
+          pillToEat = pillToEat + 1
+        }
+        if (schedule2.includes(day)) {
+          pillToEat = pillToEat + 1
+        }
+      } else if (pillToEat > 0 && date.getHours() === 8 && date.getMinutes() === 0) {
         consumed1 = consumed1.data()["consumed"];
-        
-        let consumed2 = await getDoc(doc(db, "pills", "2"))
         consumed2 = consumed1.data()["consumed"];
 
         if (!consumed1 && consumed2) {
@@ -141,13 +186,11 @@ function App() {
           })
         }
 
-      } else if (date.getHours() === 17 && date.getMinutes() === 43) {
-        let consumed1 = await getDoc(doc(db, "pills", "1"));
+      } else if (pillToEat > 0 && date.getHours() === 12 && date.getMinutes() === 0) {
         let emails = consumed1.data()["emails"];
         consumed1 = consumed1.data()["consumed"];
         
-        let consumed2 = await getDoc(doc(db, "pills", "2"))
-        //emails = emails.concat(consumed2.data()["emails"])
+        emails = emails.concat(consumed2.data()["emails"])
         consumed2 = consumed2.data()["consumed"];
 
         if (!consumed1 && consumed2) {
@@ -186,6 +229,7 @@ function App() {
   async function pillConsumed() {
     let compartment1 = await getDoc(doc(db, "pills", "1"))
     compartment1 = compartment1.data()["quantity"];
+    console.log("pillToEat is " + pillToEat)
     console.log("Compartment 1 is " + compartment1)
     console.log("pillConsumed1 is " + pillConsumed1)
 
@@ -195,11 +239,12 @@ function App() {
     console.log("pillConsumed2 is " + pillConsumed2)
 
     if (compartment1 < pillConsumed1) {
-      console.log("HERE I AM")
       await updateDoc(doc(db, "pills", "1"), {consumed: true})
+      pillToEat = pillToEat - 1
     }
     if (compartment2 < pillConsumed2) {
       await updateDoc(doc(db, "pills", "2"), {consumed: true})
+      pillToEat = pillToEat - 1
     }
     setFlag1(compartment1)
     setFlag2(compartment2)
@@ -209,8 +254,7 @@ function App() {
     <div className="App">
       <h1>My Pills</h1>
 
-      {/* <button onClick={() => setPopupActive(!popupActive)}>Add Pill</button> */}
-      <button onClick={() => pillConsumed()}>Add Pill</button>
+      <button onClick={() => setPopupActive(!popupActive)}>Add Pill</button>
 
       <div className="pills">
         { pills.map((pill, i) => (
