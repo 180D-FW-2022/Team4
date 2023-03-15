@@ -461,7 +461,8 @@ while True:
         count = 0
         while count < 10:
             AccXangle, AccYangle = readIMU()
-            if (AccXangle >= 3) and (AccXangle <= 7) and (AccYangle >= 1) and (AccYangle <= 3):         
+            #print(AccXangle, AccYangle)
+            if (AccXangle >= -3) and (AccXangle <= 3) and (AccYangle >= -3) and (AccYangle <= 3):         
                 count = count+1                     
             else:
                 count = 0
@@ -484,7 +485,7 @@ while True:
   
     while count < 5:
         AccXangle, AccYangle = readIMU()
-        if (AccXangle >= 3) and (AccXangle <= 7) and (AccYangle >= 1) and (AccYangle <= 3):
+        if (AccXangle >= -3) and (AccXangle <= 3) and (AccYangle >= -3) and (AccYangle <= 3):
             #print(AccXangle)
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(5,GPIO.IN)
