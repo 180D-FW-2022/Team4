@@ -25,10 +25,17 @@ import datetime
 import os
 from time import sleep
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
+import pyrebase
 
-# GPIO Pin where solenoid control circuit is connected.
-solenoid_pin = 8
+solenoid_pin=8
+comm_flag = 0
+
+config = {
+  "apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
+  "authDomain": "pill-smart.firebaseapp.com",
+  "databaseURL": "https://pill-smart-default-rtdb.firebaseio.com",
+  "storageBucket": "pill-smart.appspot.com"
+}
 
 
 RAD_TO_DEG = 57.29578
@@ -158,27 +165,6 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
 
     return KFangleX
 
-
-gyroXangle = 0.0
-gyroYangle = 0.0
-gyroZangle = 0.0
-CFangleX = 0.0
-CFangleY = 0.0
-CFangleXFiltered = 0.0
-CFangleYFiltered = 0.0
-kalmanX = 0.0
-kalmanY = 0.0
-oldXMagRawValue = 0
-oldYMagRawValue = 0
-oldZMagRawValue = 0
-oldXAccRawValue = 0
-oldYAccRawValue = 0
-oldZAccRawValue = 0
-
-a = datetime.datetime.now()
-
-
-
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
 acc_medianTable1X = [1] * ACC_MEDIANTABLESIZE
 acc_medianTable1Y = [1] * ACC_MEDIANTABLESIZE
@@ -199,10 +185,30 @@ if(IMU.BerryIMUversion == 99):
     sys.exit()
 IMU.initIMU()       #Initialise the accelerometer, gyroscope and compass
 
+def readIMU():
+    
+    gyroXangle = 0.0
+    gyroYangle = 0.0
+    gyroZangle = 0.0
+    CFangleX = 0.0
+    CFangleY = 0.0
+    CFangleXFiltered = 0.0
+    CFangleYFiltered = 0.0
+    kalmanX = 0.0
+    kalmanY = 0.0
+    oldXMagRawValue = 0
+    oldYMagRawValue = 0
+    oldZMagRawValue = 0
+    oldXAccRawValue = 0
+    oldYAccRawValue = 0
+    oldZAccRawValue = 0
 
-while True:
+    a = datetime.datetime.now()
 
-    #Read the accelerometer,gyroscope and magnetometer values
+
+
+
+     #Read the accelerometer,gyroscope and magnetometer values
     ACCx = IMU.readACCx()
     ACCy = IMU.readACCy()
     ACCz = IMU.readACCz()
@@ -354,11 +360,14 @@ while True:
     accXnorm = ACCx/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
     accYnorm = ACCy/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
 
-
+    """
     #Calculate pitch and roll
     pitch = math.asin(accXnorm)
-    roll = -math.asin(accYnorm/math.cos(pitch))
-
+    if (pitch == 90 or pitch == 270):
+        roll = 0
+    else:
+        roll = -math.asin(accYnorm/math.cos(pitch))
+    
 
     #Calculate the new tilt compensated values
     #The compass and accelerometer are orientated differently on the the BerryIMUv1, v2 and v3.
@@ -378,50 +387,61 @@ while True:
 
 
 
+
+
     #Calculate tilt compensated heading
     tiltCompensatedHeading = 180 * math.atan2(magYcomp,magXcomp)/M_PI
 
     if tiltCompensatedHeading < 0:
         tiltCompensatedHeading += 360
+    """
+
+    return AccXangle, AccYangle
+
+
+
+
+
+    
 
 
     ##################### END Tilt Compensation ########################
 
 
-    levelFlag = False   #create boolean for whether or not IMU is upright or not
 
-    if 0:                       #Change to '0' to stop showing the angles from the accelerometer
-        outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
-
-    if 0:                       #Change to '0' to stop  showing the angles from the gyro
-        outputString +="\t# GRYX Angle %5.2f  GYRY Angle %5.2f  GYRZ Angle %5.2f # " % (gyroXangle,gyroYangle,gyroZangle)
-
-    if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
-        outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
-
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(solenoid_pin, GPIO.OUT)
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
 
-        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 90) and (tiltCompensatedHeading <=125):         
-            levelFlag = True                        #set flag to True if IMU is upright
+while True:
 
-            # Activate the solenoid for a second.
-            GPIO.output(solenoid_pin, GPIO.HIGH)
+    #levelFlag = False   #create boolean for whether or not IMU is upright or not
+
+    count = 0
+
+    data = {
+    "pillbox-status": 0,
+    }
+
+    while count < 15:
+        AccXangle, AccYangle = readIMU()
+        comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
+        print(AccXangle, AccYangle)
+        #print(comm_flag)
+        if (AccXangle <= 7) and (AccXangle >= 3) and (AccYangle >= 1) and (AccYangle <= 3) and (comm_flag == 1):         
+            count = count+1                     
         else:
-            levelFlag = False                       #set flag to False if IMU is not upright
-            GPIO.output(solenoid_pin, GPIO.LOW)
+            count = 0  
+                  
+    #levelFlag = True
 
-    if 1:                       #Change to '0' to stop  showing the heading
-        outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
+    db.child("pillbox-status").update(data)
 
-    if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
-        outputString +="# kalmanX %5.2f   kalmanY %5.2f #" % (kalmanX,kalmanY)
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(solenoid_pin, GPIO.OUT)
 
-    print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
+    GPIO.output(solenoid_pin,GPIO.HIGH)
+    sleep(5)
+    GPIO.output(solenoid_pin,GPIO.LOW)
 
-    #slow program down a bit, makes the output more readable
-    time.sleep(0.01)
-    
-GPIO.cleanup()
-
+    GPIO.cleanup()

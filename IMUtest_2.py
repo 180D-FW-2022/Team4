@@ -25,11 +25,8 @@ import datetime
 import os
 from time import sleep
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
 
-# GPIO Pin where solenoid control circuit is connected.
-solenoid_pin = 8
-
+solenoid_pin=8
 
 RAD_TO_DEG = 57.29578
 M_PI = 3.14159265358979323846
@@ -159,24 +156,6 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
     return KFangleX
 
 
-gyroXangle = 0.0
-gyroYangle = 0.0
-gyroZangle = 0.0
-CFangleX = 0.0
-CFangleY = 0.0
-CFangleXFiltered = 0.0
-CFangleYFiltered = 0.0
-kalmanX = 0.0
-kalmanY = 0.0
-oldXMagRawValue = 0
-oldYMagRawValue = 0
-oldZMagRawValue = 0
-oldXAccRawValue = 0
-oldYAccRawValue = 0
-oldZAccRawValue = 0
-
-a = datetime.datetime.now()
-
 
 
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
@@ -199,10 +178,30 @@ if(IMU.BerryIMUversion == 99):
     sys.exit()
 IMU.initIMU()       #Initialise the accelerometer, gyroscope and compass
 
+def readIMU():
+    
+    gyroXangle = 0.0
+    gyroYangle = 0.0
+    gyroZangle = 0.0
+    CFangleX = 0.0
+    CFangleY = 0.0
+    CFangleXFiltered = 0.0
+    CFangleYFiltered = 0.0
+    kalmanX = 0.0
+    kalmanY = 0.0
+    oldXMagRawValue = 0
+    oldYMagRawValue = 0
+    oldZMagRawValue = 0
+    oldXAccRawValue = 0
+    oldYAccRawValue = 0
+    oldZAccRawValue = 0
 
-while True:
+    a = datetime.datetime.now()
 
-    #Read the accelerometer,gyroscope and magnetometer values
+
+
+
+     #Read the accelerometer,gyroscope and magnetometer values
     ACCx = IMU.readACCx()
     ACCy = IMU.readACCy()
     ACCz = IMU.readACCz()
@@ -378,6 +377,8 @@ while True:
 
 
 
+
+
     #Calculate tilt compensated heading
     tiltCompensatedHeading = 180 * math.atan2(magYcomp,magXcomp)/M_PI
 
@@ -385,43 +386,50 @@ while True:
         tiltCompensatedHeading += 360
 
 
+    return CFangleY, kalmanY
+
+
+
+
+
+    
+
+
     ##################### END Tilt Compensation ########################
 
+while True:
 
     levelFlag = False   #create boolean for whether or not IMU is upright or not
 
-    if 0:                       #Change to '0' to stop showing the angles from the accelerometer
-        outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
+    count = 0
 
-    if 0:                       #Change to '0' to stop  showing the angles from the gyro
-        outputString +="\t# GRYX Angle %5.2f  GYRY Angle %5.2f  GYRZ Angle %5.2f # " % (gyroXangle,gyroYangle,gyroZangle)
-
-    if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
-        outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
-
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(solenoid_pin, GPIO.OUT)
-
-
-        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 90) and (tiltCompensatedHeading <=125):         
-            levelFlag = True                        #set flag to True if IMU is upright
-
-            # Activate the solenoid for a second.
-            GPIO.output(solenoid_pin, GPIO.HIGH)
+    while count < 50:
+        CFangleY, kalmanY = readIMU()
+        print(CFangleY, kalmanY)
+        if (CFangleY <= -45) and (CFangleY >= -55) and (kalmanY >= -89) and (kalmanY <= -87):
+            count = count+1                     
         else:
-            levelFlag = False                       #set flag to False if IMU is not upright
-            GPIO.output(solenoid_pin, GPIO.LOW)
+            count = 0  
+                  
+    levelFlag = True
 
-    if 1:                       #Change to '0' to stop  showing the heading
-        outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(solenoid_pin, GPIO.OUT)
 
-    if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
-        outputString +="# kalmanX %5.2f   kalmanY %5.2f #" % (kalmanX,kalmanY)
+    GPIO.output(solenoid_pin,GPIO.HIGH)
+    sleep(3)
+    GPIO.output(solenoid_pin,GPIO.LOW)
 
-    print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
+    GPIO.cleanup()
+
+
+#if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
+    #  outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
+    
+
+
+  #  print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
 
     #slow program down a bit, makes the output more readable
-    time.sleep(0.01)
-    
-GPIO.cleanup()
+  #  time.sleep(0.01)
 

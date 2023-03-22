@@ -18,17 +18,27 @@
 
 
 import sys
+from telnetlib import STATUS
 import time
 import math
 import IMU
 import datetime
 import os
 from time import sleep
+import pyrebase
+from random import randint
 import RPi.GPIO as GPIO
-import paho.mqtt.client as mqtt
 
-# GPIO Pin where solenoid control circuit is connected.
-solenoid_pin = 8
+
+solenoid_pin=14
+comm_flag = 0
+
+config = {
+  "apiKey": "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
+  "authDomain": "pill-smart.firebaseapp.com",
+  "databaseURL": "https://pill-smart-default-rtdb.firebaseio.com",
+  "storageBucket": "pill-smart.appspot.com"
+}
 
 
 RAD_TO_DEG = 57.29578
@@ -159,26 +169,6 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
     return KFangleX
 
 
-gyroXangle = 0.0
-gyroYangle = 0.0
-gyroZangle = 0.0
-CFangleX = 0.0
-CFangleY = 0.0
-CFangleXFiltered = 0.0
-CFangleYFiltered = 0.0
-kalmanX = 0.0
-kalmanY = 0.0
-oldXMagRawValue = 0
-oldYMagRawValue = 0
-oldZMagRawValue = 0
-oldXAccRawValue = 0
-oldYAccRawValue = 0
-oldZAccRawValue = 0
-
-a = datetime.datetime.now()
-
-
-
 #Setup the tables for the mdeian filter. Fill them all with '1' so we dont get devide by zero error
 acc_medianTable1X = [1] * ACC_MEDIANTABLESIZE
 acc_medianTable1Y = [1] * ACC_MEDIANTABLESIZE
@@ -199,10 +189,30 @@ if(IMU.BerryIMUversion == 99):
     sys.exit()
 IMU.initIMU()       #Initialise the accelerometer, gyroscope and compass
 
+def readIMU():
+    
+    gyroXangle = 0.0
+    gyroYangle = 0.0
+    gyroZangle = 0.0
+    CFangleX = 0.0
+    CFangleY = 0.0
+    CFangleXFiltered = 0.0
+    CFangleYFiltered = 0.0
+    kalmanX = 0.0
+    kalmanY = 0.0
+    oldXMagRawValue = 0
+    oldYMagRawValue = 0
+    oldZMagRawValue = 0
+    oldXAccRawValue = 0
+    oldYAccRawValue = 0
+    oldZAccRawValue = 0
 
-while True:
+    a = datetime.datetime.now()
 
-    #Read the accelerometer,gyroscope and magnetometer values
+
+
+
+     #Read the accelerometer,gyroscope and magnetometer values
     ACCx = IMU.readACCx()
     ACCy = IMU.readACCy()
     ACCz = IMU.readACCz()
@@ -356,9 +366,12 @@ while True:
 
 
     #Calculate pitch and roll
-    pitch = math.asin(accXnorm)
-    roll = -math.asin(accYnorm/math.cos(pitch))
-
+    """pitch = math.asin(accXnorm)
+    if (pitch == 90 or pitch == 270):
+        roll = 0
+    else:
+        roll = -math.asin(accYnorm/math.cos(pitch))
+    
 
     #Calculate the new tilt compensated values
     #The compass and accelerometer are orientated differently on the the BerryIMUv1, v2 and v3.
@@ -378,50 +391,131 @@ while True:
 
 
 
+
+
     #Calculate tilt compensated heading
     tiltCompensatedHeading = 180 * math.atan2(magYcomp,magXcomp)/M_PI
 
     if tiltCompensatedHeading < 0:
         tiltCompensatedHeading += 360
+"""
+
+    return AccXangle, AccYangle
 
 
     ##################### END Tilt Compensation ########################
 
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
-    levelFlag = False   #create boolean for whether or not IMU is upright or not
 
-    if 0:                       #Change to '0' to stop showing the angles from the accelerometer
-        outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
+#HX711
+EMULATE_HX711=False
 
-    if 0:                       #Change to '0' to stop  showing the angles from the gyro
-        outputString +="\t# GRYX Angle %5.2f  GYRY Angle %5.2f  GYRZ Angle %5.2f # " % (gyroXangle,gyroYangle,gyroZangle)
+referenceUnit = 1
 
-    if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
-        outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
+if not EMULATE_HX711:
+    import RPi.GPIO as GPIO
+    from hx711 import HX711
+else:
+    from emulated_hx711 import HX711
 
-        GPIO.setmode(GPIO.BOARD)
+def cleanAndExit():
+    print("Cleaning...")
+
+    if not EMULATE_HX711:
+        GPIO.cleanup()
+        
+    print("Bye!")
+    sys.exit()
+
+hx = HX711(5, 6)
+hx2 = HX711(17,27)
+
+hx.set_reading_format("MSB", "MSB")
+hx2.set_reading_format("MSB","MSB")
+hx.set_reference_unit(1103)
+hx2.set_reference_unit(1054)
+
+hx.reset()
+hx2.reset()
+
+hx.tare()
+hx2.tare()
+
+print("Tare done! Add weight now...")
+
+print("Send Data to Firebase Using Raspberry Pi")
+print("—————————————-")
+print()
+
+
+
+while True:
+    data = {
+    "pillbox-status": 0,
+    }
+    comm_flag = db.child("pillbox-status").child("pillbox-status").get().val()
+    #GPIO.setmode(GPIO.BCM)
+    if (comm_flag==1):
+        count = 0
+        while count < 10:
+            AccXangle, AccYangle = readIMU()
+            #print(AccXangle, AccYangle)
+            if (AccXangle >= -3) and (AccXangle <= 3) and (AccYangle >= -3) and (AccYangle <= 3):         
+                count = count+1                     
+            else:
+                count = 0
+
+        db.child("pillbox-status").update(data)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(solenoid_pin, GPIO.OUT)
 
+        GPIO.output(solenoid_pin,GPIO.HIGH)
+        sleep(5)
+        GPIO.output(solenoid_pin,GPIO.LOW)
 
-        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 90) and (tiltCompensatedHeading <=125):         
-            levelFlag = True                        #set flag to True if IMU is upright
 
-            # Activate the solenoid for a second.
-            GPIO.output(solenoid_pin, GPIO.HIGH)
-        else:
-            levelFlag = False                       #set flag to False if IMU is not upright
-            GPIO.output(solenoid_pin, GPIO.LOW)
 
-    if 1:                       #Change to '0' to stop  showing the heading
-        outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
 
-    if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
-        outputString +="# kalmanX %5.2f   kalmanY %5.2f #" % (kalmanX,kalmanY)
+    prev = 0
+    prev2 = 0
+    count = 0
+      
+  
+    while count < 5:
+        AccXangle, AccYangle = readIMU()
+        if (AccXangle >= -3) and (AccXangle <= 3) and (AccYangle >= -3) and (AccYangle <= 3):
+            #print(AccXangle)
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(5,GPIO.IN)
+            GPIO.setup(6,GPIO.OUT)
+            GPIO.setup(17,GPIO.IN)
+            GPIO.setup(27,GPIO.OUT)
+            val = max(0, int(hx.get_weight(5)))
+            val2 = max(0, int(hx2.get_weight(5)))
 
-    print(outputString + str(levelFlag))    #print out True and False statements along with readings, eventually integrated with voice control
-
-    #slow program down a bit, makes the output more readable
-    time.sleep(0.01)
+            if (prev == val) and (prev2 == val2):
+                count += 1
+            prev = val
+            prev2 = val2
     
-GPIO.cleanup()
+    compartment1_weight = float(prev)
+    compartment2_weight = float(prev2)
+
+
+    print("Compartment 1 Weight: {} g".format(compartment1_weight))
+    print()
+
+    data = {
+        "weight": compartment1_weight,
+    }
+    data2 = {
+        "weight": compartment2_weight,
+    }
+
+    db.child("pill-data").child("compartment-1").update(data)
+    db.child("pill-data").child("compartment-2").update(data2)
+
+    GPIO.cleanup()
 

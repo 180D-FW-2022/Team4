@@ -23,13 +23,7 @@ import math
 import IMU
 import datetime
 import os
-from time import sleep
-import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
-
-# GPIO Pin where solenoid control circuit is connected.
-solenoid_pin = 8
-
 
 RAD_TO_DEG = 57.29578
 M_PI = 3.14159265358979323846
@@ -40,7 +34,7 @@ ACC_LPF_FACTOR = 0.4    # Low pass filter constant for accelerometer
 ACC_MEDIANTABLESIZE = 9         # Median filter table size for accelerometer. Higher = smoother but a longer delay
 MAG_MEDIANTABLESIZE = 9         # Median filter table size for magnetometer. Higher = smoother but a longer delay
 
-
+comm_flag = 1
 
 ################# Compass Calibration values ############
 # Use calibrateBerryIMU.py to get calibration values
@@ -159,6 +153,26 @@ def kalmanFilterX ( accAngle, gyroRate, DT):
     return KFangleX
 
 
+def on_connect(client, userdata, flags, rc):
+    print("Connection returned result: "+str(rc))
+# Subscribing in on_connect() means that if we lose the connection and
+# reconnect then subscriptions will be renewed.
+    client.subscribe("ece180d/test3", qos=1)
+# The callback of the client when it disconnects.
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print('Unexpected Disconnect')
+    else:
+        print('Expected Disconnect')
+# The default message callback.
+# (you can create separate callbacks per subscribed topic)
+def on_message(client, userdata, message):
+    #print('Received message: "' + str(message.payload) + '" on topic "' + message.topic + '" with QoS ' + str(message.qos))
+    global comm_flag
+    comm_flag = int(message.payload)
+   # print("ON_MESSAGE: " + str(comm_flag))
+
+
 gyroXangle = 0.0
 gyroYangle = 0.0
 gyroZangle = 0.0
@@ -200,8 +214,29 @@ if(IMU.BerryIMUversion == 99):
 IMU.initIMU()       #Initialise the accelerometer, gyroscope and compass
 
 
-while True:
 
+client = mqtt.Client()
+    # add additional client options (security, certifications, etc.)
+    # many default options should be good to start off.
+    # add callbacks to client.
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+
+    # 2. connect to a broker using one of the connect*() functions.
+client.connect_async('test.mosquitto.org')
+    # client.connect("mqtt.eclipse.org")
+    # 3. call one of the loop*() functions to maintain network traffic flow with the broker.
+
+client.loop_start()
+
+
+while True:
+    
+    #call subscriber.py
+    #print("HELLO WORLD")
+    #print(comm_flag)
+    #print(comm_flag == False)
     #Read the accelerometer,gyroscope and magnetometer values
     ACCx = IMU.readACCx()
     ACCy = IMU.readACCy()
@@ -378,6 +413,8 @@ while True:
 
 
 
+
+
     #Calculate tilt compensated heading
     tiltCompensatedHeading = 180 * math.atan2(magYcomp,magXcomp)/M_PI
 
@@ -390,7 +427,7 @@ while True:
 
     levelFlag = False   #create boolean for whether or not IMU is upright or not
 
-    if 0:                       #Change to '0' to stop showing the angles from the accelerometer
+    if 1:                       #Change to '0' to stop showing the angles from the accelerometer
         outputString += "#  ACCX Angle %5.2f ACCY Angle %5.2f  #  " % (AccXangle, AccYangle)
 
     if 0:                       #Change to '0' to stop  showing the angles from the gyro
@@ -398,21 +435,13 @@ while True:
 
     if 1:                       #Change to '0' to stop  showing the angles from the complementary filter
         outputString +="\t#  CFangleX Angle %5.2f   CFangleY Angle %5.2f  #" % (CFangleX,CFangleY)
-
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(solenoid_pin, GPIO.OUT)
-
-
-        if (CFangleY <= -75) and (CFangleY >= -105) and (tiltCompensatedHeading >= 90) and (tiltCompensatedHeading <=125):         
+        if (CFangleY <= -75) and (CFangleY >= -105) and (comm_flag == 1):        
             levelFlag = True                        #set flag to True if IMU is upright
-
-            # Activate the solenoid for a second.
-            GPIO.output(solenoid_pin, GPIO.HIGH)
         else:
-            levelFlag = False                       #set flag to False if IMU is not upright
-            GPIO.output(solenoid_pin, GPIO.LOW)
+            levelFlag = False                       #set flag to False if IMU is not upright 
 
-    if 1:                       #Change to '0' to stop  showing the heading
+
+    if 0:                       #Change to '0' to stop  showing the heading
         outputString +="\t# HEADING %5.2f  tiltCompensatedHeading %5.2f #" % (heading,tiltCompensatedHeading)
 
     if 0:                       #Change to '0' to stop  showing the angles from the Kalman filter
@@ -422,6 +451,4 @@ while True:
 
     #slow program down a bit, makes the output more readable
     time.sleep(0.01)
-    
-GPIO.cleanup()
 
