@@ -2,8 +2,7 @@ import { initializeApp } from "firebase/app"
 import { getFirestore, updateDoc, doc, getDoc, onSnapshot } from "firebase/firestore"
 import { getDatabase, ref, onValue } from "firebase/database"
 
-//Add compartment adding check
-
+// this is the config JSON for the specific Firebase instance
 const firebaseConfig = {
     apiKey: "AIzaSyDe6yvhZxc0z5cavL17xUlob3K8m4kZy1Y",
     authDomain: "pill-smart.firebaseapp.com",
@@ -15,6 +14,7 @@ const firebaseConfig = {
     measurementId: "G-S5WK8XZ29Q"
   };
 
+// here both the Firebase Firestore and Realtime database instances are being initialized
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
@@ -22,19 +22,12 @@ const db = getFirestore(app);
 const realtimeDB = getDatabase(app);
 const weightRef = ref(realtimeDB, 'pill-data/');
 
-//To Do:
-//* address how to fix the fact that not all compartments will be filled at all times (updateDoc instead of addDoc) - DONE
-//* address how to display the cards if all four compartments are not being used at the moment
-//* address how to identify and change an update in the unit weight of a pill - DONE
-//* address how you need to update weight immediataely when unit is updated in Firestore
-
 //Retrieve the relevant weight data for the compartments
 const compOne = doc(db, "pills", "1")
 let docSnapOne = await getDoc(compOne);
 let weightOne = Number(docSnapOne.data()["unit"])
 onSnapshot(doc(db, "pills", "1"), (doc) => {
   weightOne = parseInt(doc.data()["unit"]);
-  //console.log("Unit weight is: " + weightOne)
 })
 
 const compTwo = doc(db, "pills", "2")
@@ -42,7 +35,6 @@ let docSnapTwo = await getDoc(compTwo);
 let weightTwo = Number(docSnapTwo.data()["unit"])
 onSnapshot(doc(db, "pills", "2"), (doc) => {
   weightTwo = parseInt(doc.data()["unit"]);
-  //console.log("Unit weight is: " + weightTwo)
 })
 
 const compThree = doc(db, "pills", "3")
@@ -50,7 +42,6 @@ let docSnapThree = await getDoc(compThree);
 let weightThree = Number(docSnapThree.data()["unit"])
 onSnapshot(doc(db, "pills", "3"), (doc) => {
   weightThree = parseInt(doc.data()["unit"]);
-  //console.log("Unit weight is: " + weightThree)
 })
 
 const compFour = doc(db, "pills", "4")
@@ -58,11 +49,9 @@ let docSnapFour = await getDoc(compFour);
 let weightFour = Number(docSnapFour.data()["unit"])
 onSnapshot(doc(db, "pills", "4"), (doc) => {
   weightFour = parseInt(doc.data()["unit"]);
-  //console.log("Unit weight is: " + weightFour)
 })
 
-//To retrieve data from Firebase Realtime database
-//when there is an update in data
+// To retrieve data from Firebase Realtime database and update Firestore accordingly when there is an update
 let data;
 onValue(weightRef, (snapshot) => {
   data = snapshot.val();
