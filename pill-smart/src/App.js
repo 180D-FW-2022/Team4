@@ -11,6 +11,7 @@ import {
   updateDoc
 } from "firebase/firestore"
 
+// this maps a numeric value to each day (corresponds to the mapping declared by the date library)
 let dayMapping = {0: "Sunday",
                   1: "Monday",
                   2: "Tuesday",
@@ -19,7 +20,9 @@ let dayMapping = {0: "Sunday",
                   5: "Friday",
                   6: "Saturday"}
 
+// declaration of the App class
 function App() {
+  // there are state variables for pill values, adding new pills, whether a specific popup in the frontend is active, and whether a pill has been consumed in a compartment
   const [pills, setPills] = useState([])
   const [form, setForm] = useState({
     name: "",
@@ -35,9 +38,11 @@ function App() {
   const [pillConsumed2, setFlag2] = useState(0)
   var pillToEat = 0
 
+  // taking an snapshot of the Firestore and Realtime database
   const pillsCollectionRef = collection(db, "pills")
   const mailCollectionRef = collection(db, "mail")
 
+  // set an interval to check if an email should be sent or a pill is consumed
   useEffect(() => {
     onSnapshot(pillsCollectionRef, snapshot => {
       setPills(snapshot.docs.map(doc => {
@@ -53,6 +58,7 @@ function App() {
     setInterval(pillConsumed, 60000)
   }, [])
 
+  // toggle the view of each box associated with a pill and its relevant data
   const handleView = id => {
     const pillsClone = [...pills]
     
@@ -67,6 +73,7 @@ function App() {
     setPills(pillsClone)
   }
 
+  // action of adding a new pill to the box
   const handleSubmit = e => {
     e.preventDefault()
 
@@ -115,6 +122,7 @@ function App() {
     setPopupActive(false)
   }
 
+  // adds email to a specific pill
   const handleEmail = (e, i) => {
     const emailsClone = [...form.emails]
 
@@ -126,6 +134,7 @@ function App() {
     })
   }
 
+  // a helper function associated with adding emails for a specific pill
   const handleEmailCount = () => {
     setForm({
       ...form,
@@ -133,10 +142,12 @@ function App() {
     })
   }
 
+  // helper function that removes pill from database
   const removePill = id => {
     deleteDoc(doc(db, "pills", id))
   }
 
+  // fuunction that leverages the Trigger Email Firebase extension to send reminder emails to the user
   async function sendEmail(email, subject = "PillSmart Alert", text = "", html = "") {
     //if it's the beginning of a new day, change the flag in the database to 0
     //if it's the eighth hour, send an email with all the pills that need to be taken today
@@ -226,6 +237,7 @@ function App() {
     }
   }
 
+  // helper function that checks whether a pill in a specific compartment has been consumed for the day
   async function pillConsumed() {
     let compartment1 = await getDoc(doc(db, "pills", "1"))
     compartment1 = compartment1.data()["quantity"];
