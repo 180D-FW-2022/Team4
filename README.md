@@ -16,5 +16,4 @@ The voice recognition system is fully integrated will all remaining modules of t
 
 The weight sensor programs consist of weight.py and weightintegrationtest.py. weightintegrationtest2.py simultaneously reads data from 2 weight sensors and updates the realtime Firebase database with the weight sensor readings. weightintegrationtest2_1.py takes this functionality and prevents readings from being updated in Firebase if the box is not level.
 
-
-
+To set up the web application software for PillSmart, Node Package Manager (npm) must be installed. Install [npm here](https://www.npmjs.com). Once npm is isntalled, please clone the repository locally, visit the pill-smart directory, and type the command "npm start". A new tab should open in your default browser window and an instance of the PillSmart user interface should appear!
