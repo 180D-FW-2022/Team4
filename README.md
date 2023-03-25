@@ -8,7 +8,7 @@ For communication with the online Firebase database, Pyrebase must be installed 
 
 final_integration.py contains the code for all subsystems relating to the box. Running this file allows for the full functionality of the box.
 
-The voice recognition code was referenced from the Google Assistant API developer documentation [website] (https://developers.google.com/assistant/sdk/guides/service/python/embed/setup?hardware=rpi). Please follow the instructions in the provided link to download, install, and setup Google Assistant on the Raspberry Pi. Please run the file pushtotalk.py using the command "python pushtotalk.py" to activate the voice assistant. The voice assistaant will constantly run and listen to commands provided by the user.
+The voice recognition code was referenced from the Google Assistant API developer documentation [website](https://developers.google.com/assistant/sdk/guides/service/python/embed/setup?hardware=rpi). Please follow the instructions in the provided link to download, install, and setup Google Assistant on the Raspberry Pi. Please run the file pushtotalk.py using the command "python pushtotalk.py" to activate the voice assistant. The voice assistaant will constantly run and listen to commands provided by the user.
 
 The voice recognition system is fully integrated will all remaining modules of the product and supports the following commands: 
 "Open pillbox" 
